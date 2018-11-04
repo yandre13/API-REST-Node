@@ -34,7 +34,8 @@ const putUpload = async (req, res) => {
   })
  }
  if (type === 'user') {
-  await imageUser(id, res, imageName).then(() => {
+
+  await imageOf(type, id, res, imageName).then(() => {
    image.mv(`${__dirname}/../uploads/${type}/${imageName}`, (err) => {
     if (err) {
      return res.status(500).send({ ok: false, message: `server error. ${err.message}` })
@@ -42,7 +43,7 @@ const putUpload = async (req, res) => {
    })
   })
  } else {
-  await imageProduct(id, res, imageName).then(() => {
+  await imageOf(type, id, res, imageName).then(() => {
    image.mv(`${__dirname}/../uploads/${type}/${imageName}`, (err) => {
     if (err) {
      return res.status(500).send({ ok: false, message: `server error. ${err.message}` })
@@ -52,82 +53,78 @@ const putUpload = async (req, res) => {
  }
 }
 
-const imageUser = (id, res, image) => new Promise((resolve, reject) => {
- User.findById(id, (err, userDB) => {
+const imageOf = (type, id, res, image) => new Promise((resolve, reject) => {
+ if (type === 'user') {
+  User.findById(id, (err, userDB) => {
 
-  if (!userDB) {
-   return res.status(400).send({
-    ok: false,
-    message: `The user with the id was not found: ${id}`
-   })
-  }
-
-  if (err) {
-   return res.status(500).send({
-    ok: false,
-    message: `server error ${err.message}`
-   })
-  }
-  const oldImage = userDB.picture
-  deleteImage('user',oldImage)
-  userDB.picture = image
-  userDB.save((err, userUp) => {
+   if (!userDB) {
+    return res.status(400).send({
+     ok: false,
+     message: `The user with the id was not found: ${id}`
+    })
+   }
    if (err) {
     return res.status(500).send({
      ok: false,
      message: `server error ${err.message}`
     })
    }
-   resolve(res.status(201).send({
-    ok: true,
-    message: `correctly updated image`,
-    user: userUp
-   }))
+   const oldImage = userDB.picture
+   deleteImage('user', oldImage)
+   userDB.picture = image
+   userDB.save((err, userUp) => {
+    if (err) {
+     return res.status(500).send({
+      ok: false,
+      message: `server error ${err.message}`
+     })
+    }
+    resolve(res.status(201).send({
+     ok: true,
+     message: `correctly updated image`,
+     user: userUp
+    }))
+   })
   })
- })
-})
-
-const imageProduct = (id, res, image) => new Promise((resolve, reject) => {
- Product.findById(id, (err, productDB) => {
-  if (!productDB) {
-   return res.status(400).send({
-    ok: false,
-    message: `The user with the id was not found: ${id}`
-   })
-  }
-
-  if (err) {
-   return res.status(500).send({
-    ok: false,
-    message: `server error ${err.message}`
-   })
-  }
-  const oldImage = productDB.picture
-  deleteImage('product',oldImage)
-  productDB.picture = image
-  productDB.save((err, productUp) => {
+ } else {
+  Product.findById(id, (err, productDB) => {
+   if (!productDB) {
+    return res.status(400).send({
+     ok: false,
+     message: `The user with the id was not found: ${id}`
+    })
+   }
    if (err) {
     return res.status(500).send({
      ok: false,
      message: `server error ${err.message}`
     })
    }
-   resolve(res.status(201).send({
-    ok: true,
-    message: `correctly updated image`,
-    product: productUp
-   }))
+   const oldImage = productDB.picture
+   deleteImage('product', oldImage)
+   productDB.picture = image
+   productDB.save((err, productUp) => {
+    if (err) {
+     return res.status(500).send({
+      ok: false,
+      message: `server error ${err.message}`
+     })
+    }
+    resolve(res.status(201).send({
+     ok: true,
+     message: `correctly updated image`,
+     product: productUp
+    }))
+   })
   })
- })
+ }
 })
 
-const deleteImage = (type, imageName)=>{
+const deleteImage = (type, imageName) => {
  const imagePath = `${__dirname}/../uploads/${type}/${imageName}`
  if (fs.existsSync(imagePath)) {
   fs.unlinkSync(imagePath)
  }
 }
 
-module.exports = {
- putUpload
-}
+module.exports = { putUpload }
